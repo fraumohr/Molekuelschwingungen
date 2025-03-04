@@ -43,4 +43,50 @@
                 let t = i / numCoils;
                 let x = start.x + t * (end.x - start.x);
                 let y = Math.sin(i * Math.PI * 2) * amplitude;
-                points.push(n
+                points.push(new THREE.Vector3(x, y, 0));
+            }
+            return new THREE.BufferGeometry().setFromPoints(points);
+        }
+        let springGeometry = createSpringSegments(atom1.position, atom2.position);
+        const spring = new THREE.Line(springGeometry, springMaterial);
+        scene.add(spring);
+
+        camera.position.z = 2;
+
+        let D = 1;
+        let m = 1;
+        let damping = 0.05;
+        let amplitude = 0.5;
+        let time = 0;
+        let omega = Math.sqrt(D / m);
+        let baseDistance = 1.0;
+
+        function updateOscillation() {
+            time += 0.05;
+            let displacement = amplitude * Math.cos(omega * time);
+            atom1.position.x = -baseDistance - displacement;
+            atom2.position.x = baseDistance + displacement;
+            let newSpringGeometry = createSpringSegments(atom1.position, atom2.position);
+            spring.geometry.dispose();
+            spring.geometry = newSpringGeometry;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateOscillation();
+            renderer.render(scene, camera);
+        }
+
+        document.getElementById("run").addEventListener("click", () => {
+            m = parseFloat(document.getElementById("mass").value);
+            D = parseFloat(document.getElementById("spring").value);
+            damping = parseFloat(document.getElementById("damping").value);
+            omega = Math.sqrt(D / m);
+            time = 0;
+            document.getElementById("period").innerText = (2 * Math.PI / omega).toFixed(2);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
