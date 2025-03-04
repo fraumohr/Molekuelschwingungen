@@ -5,19 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Molecular Oscillator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; }
-        #controls { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; padding: 10px; }
+        body { margin: 0; overflow: hidden; display: flex; }
+        #controls { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; }
+        #chartContainer { position: absolute; bottom: 10px; left: 10px; width: 400px; height: 200px; background: white; padding: 10px; border-radius: 5px; }
         button { margin-top: 10px; padding: 5px; }
     </style>
 </head>
 <body>
     <div id="controls">
-        <label>Mass: <input type="range" id="mass" min="0.1" max="5" step="0.1" value="1"></label><br>
-        <label>Spring D: <input type="range" id="spring" min="0.1" max="5" step="0.1" value="1"></label><br>
-        <label>Damping: <input type="range" id="damping" min="0" max="0.2" step="0.01" value="0.05"></label><br>
+        <label>Mass: <input type="range" id="mass" min="0.1" max="5" step="0.1" value="1"> <span id="massValue">1</span> kg</label><br>
+        <label>Spring D: <input type="range" id="spring" min="0.1" max="5" step="0.1" value="1"> <span id="springValue">1</span> N/m</label><br>
+        <label>Damping: <input type="range" id="damping" min="0" max="0.2" step="0.01" value="0.05"> <span id="dampingValue">0.05</span></label><br>
         <button id="run">Run</button>
         <p>Oscillation Period: <span id="period">0</span> s</p>
+    </div>
+    <div id="chartContainer">
+        <canvas id="displacementChart"></canvas>
     </div>
     <script>
         const scene = new THREE.Scene();
@@ -61,6 +66,10 @@
         let time = 0;
         let omega = Math.sqrt(D / m);
         let baseDistance = 1.2;
+        
+        const displacementData = { labels: [], datasets: [{ label: "Displacement", borderColor: "blue", data: [] }] };
+        const ctx = document.getElementById('displacementChart').getContext('2d');
+        const chart = new Chart(ctx, { type: 'line', data: displacementData, options: { responsive: false, scales: { x: { title: { display: true, text: 'Time (s)' } }, y: { title: { display: true, text: 'Displacement' } } } } });
 
         function updateOscillation() {
             time += 0.05;
@@ -71,6 +80,14 @@
             let newSpringGeometry = createSpringSegments(atom1.position, atom2.position);
             spring.geometry.dispose();
             spring.geometry = newSpringGeometry;
+            
+            if (displacementData.labels.length > 50) {
+                displacementData.labels.shift();
+                displacementData.datasets[0].data.shift();
+            }
+            displacementData.labels.push(time.toFixed(2));
+            displacementData.datasets[0].data.push(displacement);
+            chart.update();
         }
 
         function animate() {
@@ -86,6 +103,19 @@
             omega = Math.sqrt(D / m);
             time = 0;
             document.getElementById("period").innerText = (2 * Math.PI / omega).toFixed(2);
+            displacementData.labels = [];
+            displacementData.datasets[0].data = [];
+            chart.update();
+        });
+
+        document.getElementById("mass").addEventListener("input", (e) => {
+            document.getElementById("massValue").innerText = e.target.value;
+        });
+        document.getElementById("spring").addEventListener("input", (e) => {
+            document.getElementById("springValue").innerText = e.target.value;
+        });
+        document.getElementById("damping").addEventListener("input", (e) => {
+            document.getElementById("dampingValue").innerText = e.target.value;
         });
 
         animate();
