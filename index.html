@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Molecular Oscillator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #controls { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label>Mass: <input type="range" id="mass" min="0.1" max="5" step="0.1" value="1"></label><br>
+        <label>Spring k: <input type="range" id="spring" min="0.1" max="5" step="0.1" value="1"></label><br>
+        <label>Damping: <input type="range" id="damping" min="0" max="0.2" step="0.01" value="0.05"></label>
+    </div>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const sphereGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const material1 = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const material2 = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        const atom1 = new THREE.Mesh(sphereGeometry, material1);
+        const atom2 = new THREE.Mesh(sphereGeometry, material2);
+        scene.add(atom1);
+        scene.add(atom2);
+
+        const springMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+        const springGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-0.5, 0, 0),
+            new THREE.Vector3(0.5, 0, 0)
+        ]);
+        const spring = new THREE.Line(springGeometry, springMaterial);
+        scene.add(spring);
+
+        camera.position.z = 2;
+
+        let k = 1;
+        let m = 1;
+        let damping = 0.05;
+        let amplitude = 0.5;
+        let time = 0;
+        let omega = Math.sqrt(k / m);
+
+        function updateOscillation() {
+            time += 0.05;
+            let displacement = amplitude * Math.exp(-damping * time) * Math.cos(omega * time);
+            atom1.position.x = -displacement;
+            atom2.position.x = displacement;
+            spring.geometry.setFromPoints([
+                new THREE.Vector3(atom1.position.x, 0, 0),
+                new THREE.Vector3(atom2.position.x, 0, 0)
+            ]);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateOscillation();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        document.getElementById("mass").addEventListener("input", (e) => {
+            m = parseFloat(e.target.value);
+            omega = Math.sqrt(k / m);
+        });
+        document.getElementById("spring").addEventListener("input", (e) => {
+            k = parseFloat(e.target.value);
+            omega = Math.sqrt(k / m);
+        });
+        document.getElementById("damping").addEventListener("input", (e) => {
+            damping = parseFloat(e.target.value);
+        });
+    </script>
+</body>
+</html>
