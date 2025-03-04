@@ -7,14 +7,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; }
-        #controls { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; }
+        #controls { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 5px; padding: 10px; }
+        button { margin-top: 10px; padding: 5px; }
     </style>
 </head>
 <body>
     <div id="controls">
         <label>Mass: <input type="range" id="mass" min="0.1" max="5" step="0.1" value="1"></label><br>
         <label>Spring k: <input type="range" id="spring" min="0.1" max="5" step="0.1" value="1"></label><br>
-        <label>Damping: <input type="range" id="damping" min="0" max="0.2" step="0.01" value="0.05"></label>
+        <label>Damping: <input type="range" id="damping" min="0" max="0.2" step="0.01" value="0.05"></label><br>
+        <button id="run">Run</button>
     </div>
     <script>
         const scene = new THREE.Scene();
@@ -32,10 +34,18 @@
         scene.add(atom2);
 
         const springMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-        const springGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(-0.5, 0, 0),
-            new THREE.Vector3(0.5, 0, 0)
-        ]);
+        function createSpringSegments() {
+            let points = [];
+            let numCoils = 10;
+            let amplitude = 0.1;
+            for (let i = 0; i <= numCoils; i++) {
+                let x = -0.8 + (i / numCoils) * 1.6;
+                let y = Math.sin(i * Math.PI * 2 / numCoils) * amplitude;
+                points.push(new THREE.Vector3(x, y, 0));
+            }
+            return new THREE.BufferGeometry().setFromPoints(points);
+        }
+        let springGeometry = createSpringSegments();
         const spring = new THREE.Line(springGeometry, springMaterial);
         scene.add(spring);
 
@@ -47,16 +57,17 @@
         let amplitude = 0.5;
         let time = 0;
         let omega = Math.sqrt(k / m);
+        let baseDistance = 1.0;
 
         function updateOscillation() {
             time += 0.05;
             let displacement = amplitude * Math.exp(-damping * time) * Math.cos(omega * time);
-            atom1.position.x = -displacement;
-            atom2.position.x = displacement;
-            spring.geometry.setFromPoints([
-                new THREE.Vector3(atom1.position.x, 0, 0),
-                new THREE.Vector3(atom2.position.x, 0, 0)
-            ]);
+            atom1.position.x = -baseDistance - displacement;
+            atom2.position.x = baseDistance + displacement;
+            let newSpringGeometry = createSpringSegments();
+            newSpringGeometry.translate((atom1.position.x + atom2.position.x) / 2, 0, 0);
+            spring.geometry.dispose();
+            spring.geometry = newSpringGeometry;
         }
 
         function animate() {
@@ -64,19 +75,16 @@
             updateOscillation();
             renderer.render(scene, camera);
         }
-        animate();
 
-        document.getElementById("mass").addEventListener("input", (e) => {
-            m = parseFloat(e.target.value);
+        document.getElementById("run").addEventListener("click", () => {
+            m = parseFloat(document.getElementById("mass").value);
+            k = parseFloat(document.getElementById("spring").value);
+            damping = parseFloat(document.getElementById("damping").value);
             omega = Math.sqrt(k / m);
+            time = 0;
         });
-        document.getElementById("spring").addEventListener("input", (e) => {
-            k = parseFloat(e.target.value);
-            omega = Math.sqrt(k / m);
-        });
-        document.getElementById("damping").addEventListener("input", (e) => {
-            damping = parseFloat(e.target.value);
-        });
+
+        animate();
     </script>
 </body>
 </html>
