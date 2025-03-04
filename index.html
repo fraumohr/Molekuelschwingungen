@@ -63,7 +63,7 @@
         let D = 1;
         let m = 1;
         let damping = 0.05;
-        let amplitude = 0.5;
+        let initialAmplitude = 0.5;
         let time = 0;
         let omega = Math.sqrt(D / m);
         let baseDistance = 1.2;
@@ -76,6 +76,7 @@
         function updateOscillation() {
             if (!animationRunning) return;
             time += 0.05;
+            let amplitude = initialAmplitude * Math.exp(-damping * time);
             let displacement = amplitude * Math.cos(omega * time);
             atom1.position.x = -baseDistance - displacement;
             atom2.position.x = baseDistance + displacement;
@@ -101,6 +102,7 @@
             damping = parseFloat(document.getElementById("damping").value);
             omega = Math.sqrt(D / m);
             time = 0;
+            initialAmplitude = 0.5;
             document.getElementById("period").innerText = (2 * Math.PI / omega).toFixed(2);
             displacementData.labels = [];
             displacementData.datasets[0].data = [];
